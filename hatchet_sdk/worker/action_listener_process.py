@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 import signal
@@ -71,11 +72,14 @@ class WorkerActionListenerProcess:
             logger.setLevel(logging.DEBUG)
 
         loop = asyncio.get_event_loop()
-        loop.add_signal_handler(signal.SIGINT, noop_handler)
-        loop.add_signal_handler(signal.SIGTERM, noop_handler)
-        loop.add_signal_handler(
-            signal.SIGQUIT, lambda: asyncio.create_task(self.exit_gracefully())
-        )
+        if os.name != 'nt':
+            loop.add_signal_handler(signal.SIGINT, noop_handler)
+            loop.add_signal_handler(signal.SIGTERM, noop_handler)
+            loop.add_signal_handler(
+                signal.SIGQUIT, lambda: asyncio.create_task(self.exit_gracefully())
+            )
+        else:
+            logger.debug("Signal handling is not supported on Windows")
 
     async def start(self, retry_attempt=0):
         if retry_attempt > 5:
